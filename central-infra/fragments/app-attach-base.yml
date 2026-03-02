@@ -21,10 +21,6 @@ services:
       - "traefik.http.routers.${APP_NAME}.tls=true"
       # Target internal application port.
       - "traefik.http.services.${APP_NAME}.loadbalancer.server.port=${APP_PORT}"
-      # HTTP router for redirecting plain HTTP to HTTPS.
-      - "traefik.http.routers.${APP_NAME}-http.rule=Host(`${APP_NAME}.app.${BASE_DOMAIN}`)"
-      - "traefik.http.routers.${APP_NAME}-http.entrypoints=web"
-      - "traefik.http.routers.${APP_NAME}-http.middlewares=redirect-to-https@file"
 
 # Networks must be defined in the consumer compose file, not here.
 # extends does not inherit top-level networks section.
