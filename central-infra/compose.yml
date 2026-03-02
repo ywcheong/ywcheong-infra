@@ -1,6 +1,6 @@
 services:
   traefik:
-    image: traefik:v3.0
+    image: traefik:latest
     container_name: central-traefik
     command:
       - --configFile=/etc/traefik/traefik.yml
@@ -9,7 +9,7 @@ services:
       - "443:443"
     volumes:
       - ./traefik:/etc/traefik
-      - ./certs:/etc/traefik/certs:ro
+      - ./traefik/certs:/etc/traefik/certs:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - central-net
@@ -77,8 +77,6 @@ services:
       - traefik.http.routers.central-grafana.rule=Host(`central.${BASE_DOMAIN}`) && PathPrefix(`/grafana`)
       - traefik.http.routers.central-grafana.entrypoints=websecure
       - traefik.http.routers.central-grafana.tls=true
-      - traefik.http.routers.central-grafana.middlewares=central-grafana-stripprefix
-      - traefik.http.middlewares.central-grafana-stripprefix.stripprefix.prefixes=/grafana
       - traefik.http.services.central-grafana.loadbalancer.server.port=3000
 
   loki:

@@ -45,10 +45,7 @@ App lifecycle management CLI for single-server infrastructure.
 
 Commands:
   create <name> <port>  Create new app scaffolding
-                        - Validates name (lowercase letters, hyphens only)
-                        - Checks for port validity (1-65535)
-                        - Creates apps/<name>/ directory structure
-                        - Generates .env, compose.base.yml, compose.attach.yml
+                        - Validates name (lowercase letters, numbers, hyphens; must start with letter)
                         
   remove <name>         Remove an existing app
                         - Prompts for confirmation
@@ -102,8 +99,8 @@ require_apps_dir() {
 validate_name() {
   local app_name="$1"
 
-  if [[ ! "$app_name" =~ ^[a-z]+(-[a-z]+)*$ ]]; then
-    error "Invalid app name '$app_name'. Use lowercase letters and hyphens only."
+  if [[ ! "$app_name" =~ ^[a-z][a-z0-9]*(-[a-z0-9]+)*$ ]]; then
+    error "Invalid app name '$app_name'. Use lowercase letters, numbers, and hyphens. Must start with a letter."
     exit 1
   fi
 }
@@ -227,8 +224,12 @@ EOF
 services:
   app-server:
     extends:
-      file: ../central-infra/fragments/app-attach-base.yml
+      file: ../../central-infra/fragments/app-attach-base.yml
       service: app-server
+
+networks:
+  central-net:
+    external: true
 EOF
 
   cat > "$app_dir/compose.base.yml" <<EOF
@@ -317,7 +318,7 @@ upgrade_app() {
   compose_app "$app_name" pull
 
   info "Recreating app container"
-  compose_app "$app_name" up -d --no-deps "app-${app_name}-server"
+  compose_app "$app_name" up -d --no-deps "${app_name}-app-server-1"
 
   success "Upgrade complete for '$app_name'. Maintenance routing will be removed on exit."
 }
@@ -334,7 +335,7 @@ list_apps() {
     app_name="$(basename "$app_dir")"
     found=1
 
-    local container_name="app-${app_name}-server"
+    local container_name="${app_name}-app-server-1"
     local status
 
     status="$(docker inspect -f '{{.State.Status}}' "$container_name" 2>/dev/null || true)"

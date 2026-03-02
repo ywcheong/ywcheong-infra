@@ -2,9 +2,9 @@
 .env
 
 # SSL/TLS certificates (manual placement)
-central-infra/certs/*.pem
-central-infra/certs/*.key
-central-infra/certs/*.crt
+*.pem
+*.key
+*.crt
 
 # Docker volumes backup
 *.tar.gz

@@ -9,9 +9,6 @@ entryPoints:
           permanent: true
   websecure:
     address: ":443"
-    http:
-      tls:
-        certResolver: filecert
 
 providers:
   docker:
@@ -23,11 +20,6 @@ providers:
     directory: "/etc/traefik/dynamic"
     watch: true
 
-certificatesResolvers:
-  filecert:
-    acme:
-      storage: "/etc/traefik/certs/acme.json"
-      tlsChallenge: {}
 
 tls:
   stores:

@@ -6,7 +6,7 @@
 # Usage: ./test-scenario.sh
 #
 
-set -e
+# set -e removed - interactive scripts need graceful error handling
 
 INFRA_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$INFRA_ROOT"
@@ -34,6 +34,18 @@ fi
 SKIPPED_STEPS=()
 COMPLETED_STEPS=()
 FAILED_STEPS=()
+
+# Read BASE_DOMAIN from .env
+get_base_domain() {
+  local env_file="$INFRA_ROOT/.env"
+  if [ -f "$env_file" ]; then
+    grep -E "^BASE_DOMAIN=" "$env_file" | cut -d'=' -f2
+  else
+    echo "example.com"
+  fi
+}
+
+BASE_DOMAIN="$(get_base_domain)"
 
 # Print section header
 section() {
@@ -77,6 +89,23 @@ confirm() {
         ;;
     esac
   done
+}
+
+# Open URL in browser
+open_url() {
+  local url="$1"
+  printf "${CYAN}Opening: %s${NC}\n" "$url"
+  if command -v xdg-open &>/dev/null; then
+    xdg-open "$url" 2>/dev/null &
+  elif command -v google-chrome &>/dev/null; then
+    google-chrome "$url" 2>/dev/null &
+  elif command -v chromium &>/dev/null; then
+    chromium "$url" 2>/dev/null &
+  elif command -v open &>/dev/null; then
+    open "$url" 2>/dev/null &
+  else
+    printf "${YELLOW}No browser found. Please open manually: %s${NC}\n" "$url"
+  fi
 }
 
 # Execute command with user confirmation
@@ -226,6 +255,55 @@ run_step "3.4" "Check if demo container is running" docker ps --filter "name=dem
 run_step "3.5" "Check if demo-alt container is running" docker ps --filter "name=demo-alt" --format "table {{.Names}}\t{{.Status}}"
 
 # ----------------------------------------------------------------------------
+# PHASE 3.6: Dynamic App Lifecycle (Live Add/Remove)
+# ----------------------------------------------------------------------------
+section "Phase 3.6: Dynamic App Lifecycle"
+
+TEST_APP_NAME="test-live-$$"
+TEST_APP_PORT=8099
+
+printf "${CYAN}This phase tests creating, deploying, and removing a new app dynamically.${NC}\n"
+printf "${CYAN}Test app name: %s (port %d)${NC}\n\n" "$TEST_APP_NAME" "$TEST_APP_PORT"
+
+run_step "3.6.1" "Create new test app" ./app create "$TEST_APP_NAME" "$TEST_APP_PORT"
+
+# Update compose.base.yml with nginx image
+step "3.6.2" "Configure test app with nginx image"
+show_cmd "sed -i 's/your-image:latest/nginx:alpine/' apps/$TEST_APP_NAME/compose.base.yml"
+confirm
+if [ $? -eq 0 ]; then
+  sed -i 's/your-image:latest/nginx:alpine/' "apps/$TEST_APP_NAME/compose.base.yml"
+  # Add custom index.html
+  mkdir -p "apps/$TEST_APP_NAME/html"
+  echo "<html><body><h1>Test App: $TEST_APP_NAME</h1><p>Dynamic app creation test successful!</p></body></html>" > "apps/$TEST_APP_NAME/html/index.html"
+  # Update compose to mount html
+  cat >> "apps/$TEST_APP_NAME/compose.base.yml" <<EOF
+    volumes:
+      - ./html:/usr/share/nginx/html:ro
+EOF
+  printf "${GREEN}✓ Step 3.6.2 completed successfully${NC}\n"
+  COMPLETED_STEPS+=("3.6.2")
+fi
+
+run_step "3.6.3" "Start test app" ./app start "$TEST_APP_NAME"
+
+printf "\n${YELLOW}Waiting 3 seconds for test app to be ready...${NC}\n"
+sleep 3
+
+run_step "3.6.4" "Verify test app is running" ./app list
+
+step "3.6.5" "Open test app in browser"
+printf "${CYAN}Opening test app URL in browser...${NC}\n"
+open_url "https://${TEST_APP_NAME}.app.${BASE_DOMAIN}"
+printf "${BOLD}Verify the test app is accessible. Press Enter to continue...${NC}"
+read -r
+COMPLETED_STEPS+=("3.6.5")
+
+run_step "3.6.6" "Stop test app" ./app stop "$TEST_APP_NAME"
+
+run_step "3.6.7" "Remove test app" rm -rf "apps/$TEST_APP_NAME"
+
+printf "${GREEN}✓ Dynamic app lifecycle test complete${NC}\n\n"
 # PHASE 4: App Management Operations
 # ----------------------------------------------------------------------------
 section "Phase 4: App Management Operations"
@@ -244,8 +322,38 @@ section "Phase 5: Infrastructure Status and Monitoring"
 
 run_step "5.1" "Full infrastructure status" ./infra status
 run_step "5.2" "Check Traefik is routing" docker logs central-traefik --tail 20
-run_step "5.3" "Check Prometheus targets" curl -s http://localhost:9090/api/v1/targets 2>/dev/null || echo "Prometheus not accessible on localhost (expected in container network)"
+run_step "5.3" "Check Prometheus targets" curl -sk "https://central.${BASE_DOMAIN}/prometheus/api/v1/targets" 2>/dev/null || echo "Prometheus not accessible via Traefik (check certificate/DNS)"
 
+# ----------------------------------------------------------------------------
+# PHASE 5.5: Browser URL Verification
+# ----------------------------------------------------------------------------
+section "Phase 5.5: Browser URL Verification"
+
+printf "${CYAN}This phase opens browser URLs for manual verification.${NC}\n"
+printf "${CYAN}Please verify each page loads correctly.${NC}\n\n"
+
+step "5.5.1" "Open Grafana dashboard"
+open_url "https://central.${BASE_DOMAIN}/grafana"
+printf "${BOLD}Login: admin / password from .env (GF_SECURITY_ADMIN_PASSWORD)${NC}\n"
+printf "${BOLD}Verify Grafana loads. Press Enter to continue...${NC}"
+read -r
+COMPLETED_STEPS+=("5.5.1")
+
+step "5.5.2" "Open Traefik dashboard"
+open_url "https://traefik.${BASE_DOMAIN}"
+printf "${BOLD}Verify Traefik dashboard shows routers and services.${NC}\n"
+printf "${BOLD}Press Enter to continue...${NC}"
+read -r
+COMPLETED_STEPS+=("5.5.2")
+
+step "5.5.3" "Open demo app"
+open_url "https://demo.app.${BASE_DOMAIN}"
+printf "${BOLD}Verify demo app is accessible.${NC}\n"
+printf "${BOLD}Press Enter to continue...${NC}"
+read -r
+COMPLETED_STEPS+=("5.5.3")
+
+printf "${GREEN}✓ Browser verification complete${NC}\n\n"
 # ----------------------------------------------------------------------------
 # PHASE 6: Cleanup (Optional)
 # ----------------------------------------------------------------------------
@@ -262,9 +370,8 @@ run_step "6.2" "Stop central infrastructure" ./infra stop
 # ----------------------------------------------------------------------------
 print_summary
 
-printf "\n${BOLD}Test scenario complete!${NC}\n"
-printf "\n${CYAN}To test routing in a browser (requires proper DNS/hosts):${NC}\n"
-printf "  • demo.app.\${BASE_DOMAIN}\n"
-printf "  • demo-alt.app.\${BASE_DOMAIN}\n"
-printf "  • central.\${BASE_DOMAIN}/grafana\n"
-printf "  • traefik.\${BASE_DOMAIN}\n"
+printf "\n${BOLD}${GREEN}Test scenario complete!${NC}\n"
+printf "\n${CYAN}Tested URLs:${NC}\n"
+printf "  • https://demo.app.%s\n" "$BASE_DOMAIN"
+printf "  • https://central.%s/grafana\n" "$BASE_DOMAIN"
+printf "  • https://traefik.%s\n" "$BASE_DOMAIN"
