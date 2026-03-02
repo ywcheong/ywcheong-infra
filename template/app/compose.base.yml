@@ -1,0 +1,7 @@
+services:
+  app-server:
+    image: your-image:latest
+    # environment:
+    #   - KEY=value
+    # volumes:
+    #   - ./data:/app/data

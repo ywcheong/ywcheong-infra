@@ -1,5 +1,7 @@
 # Environment files (contains sensitive data)
 .env
+!template/.env
+!template/app/.env
 
 # SSL/TLS certificates (manual placement)
 *.pem
@@ -11,6 +13,7 @@
 
 # Auto-generated auth middleware
 dashboard-auth.yml
+!template/dashboard-auth.yml
 
 # macOS
 .DS_Store

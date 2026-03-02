@@ -6,6 +6,8 @@ set -o pipefail
 INFRA_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CENTRAL_INFRA_DIR="$INFRA_ROOT/central-infra"
 APPS_DIR="$INFRA_ROOT/apps"
+TEMPLATE_DIR="$INFRA_ROOT/template/app"
+MAINTENANCE_TEMPLATE="$INFRA_ROOT/template/maintenance.yml"
 
 if [ -t 1 ]; then
   COLOR_RED='\033[0;31m'
@@ -247,21 +249,19 @@ generate_maintenance_yaml() {
   local app_name="$1"
   local base_domain
 
+  if [ ! -f "$MAINTENANCE_TEMPLATE" ]; then
+    error "Maintenance template not found: $MAINTENANCE_TEMPLATE"
+    exit 1
+  fi
+
   if ! base_domain="$(read_env_value "$INFRA_ROOT/.env" "BASE_DOMAIN")"; then
     error "BASE_DOMAIN is missing in $INFRA_ROOT/.env"
     exit 1
   fi
 
-  cat <<EOF
-http:
-  routers:
-    maintenance-${app_name}:
-      rule: "Host(\`${app_name}.app.${base_domain}\`)"
-      entrypoints:
-        - websecure
-      tls: true
-      service: central-maintenance
-EOF
+  sed -e "s/\${APP_NAME}/$app_name/g" \
+      -e "s/\${BASE_DOMAIN}/$base_domain/g" \
+      "$MAINTENANCE_TEMPLATE"
 }
 
 create_app() {
@@ -278,34 +278,36 @@ create_app() {
     exit 1
   fi
 
+  if [ ! -d "$TEMPLATE_DIR" ]; then
+    error "Template directory not found: $TEMPLATE_DIR"
+    exit 1
+  fi
+
+  if [ ! -f "$TEMPLATE_DIR/.env" ]; then
+    error "Template .env not found: $TEMPLATE_DIR/.env"
+    exit 1
+  fi
+
+  if [ ! -f "$TEMPLATE_DIR/compose.base.yml" ]; then
+    error "Template compose.base.yml not found: $TEMPLATE_DIR/compose.base.yml"
+    exit 1
+  fi
+
+  if [ ! -f "$TEMPLATE_DIR/compose.attach.yml" ]; then
+    error "Template compose.attach.yml not found: $TEMPLATE_DIR/compose.attach.yml"
+    exit 1
+  fi
+
   mkdir -p "$app_dir"
 
-  cat > "$app_dir/.env" <<EOF
-APP_NAME=${app_name}
-APP_PORT=${app_port}
-EOF
+  # Copy template files
+  cp "$TEMPLATE_DIR/.env" "$app_dir/.env"
+  cp "$TEMPLATE_DIR/compose.base.yml" "$app_dir/compose.base.yml"
+  cp "$TEMPLATE_DIR/compose.attach.yml" "$app_dir/compose.attach.yml"
 
-  cat > "$app_dir/compose.attach.yml" <<EOF
-services:
-  app-server:
-    extends:
-      file: ../../central-infra/fragments/app-attach-base.yml
-      service: app-server
-
-networks:
-  central-net:
-    external: true
-EOF
-
-  cat > "$app_dir/compose.base.yml" <<EOF
-services:
-  app-server:
-    image: your-image:latest
-    # environment:
-    #   - KEY=value
-    # volumes:
-    #   - ./data:/app/data
-EOF
+  # Replace placeholders with actual values
+  sed -i "s/\${APP_NAME}/$app_name/g" "$app_dir/.env"
+  sed -i "s/\${APP_PORT}/$app_port/g" "$app_dir/.env"
 
   success "App '$app_name' scaffolded in $app_dir"
   info "Next steps:"

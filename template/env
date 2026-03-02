@@ -1,0 +1,18 @@
+# Infrastructure Global Configuration
+# This is the ONLY place where BASE_DOMAIN is defined
+
+# Domain Configuration
+BASE_DOMAIN=example.com
+
+# MySQL Configuration
+# Generate a strong password: openssl rand -base64 32
+MYSQL_ROOT_PASSWORD=CHANGE_ME_MYSQL_PASSWORD
+
+# Grafana Configuration
+# Generate a strong password: openssl rand -base64 32
+GF_SECURITY_ADMIN_PASSWORD=CHANGE_ME_GRAFANA_PASSWORD
+
+# Traefik Dashboard Authentication
+# Generate with: htpasswd -nbB admin <password> | sed 's/\$/\$\$/g'
+# Example format: admin:$$2y$$10$$xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TRAEFIK_DASHBOARD_AUTH=admin:$$2y$$10$$CHANGE_ME_GENERATE_WITH_HTPASSWD

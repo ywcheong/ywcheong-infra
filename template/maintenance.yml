@@ -1,0 +1,8 @@
+http:
+  routers:
+    maintenance-${APP_NAME}:
+      rule: "Host(`${APP_NAME}.app.${BASE_DOMAIN}`)"
+      entrypoints:
+        - websecure
+      tls: true
+      service: central-maintenance
