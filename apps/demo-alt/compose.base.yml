@@ -3,3 +3,7 @@ services:
     image: nginx:alpine
     volumes:
       - ./html:/usr/share/nginx/html:ro
+    # environment:
+    #   - KEY=value
+    # volumes:
+    #   - ./data:/app/data
