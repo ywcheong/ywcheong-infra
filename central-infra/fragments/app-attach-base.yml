@@ -4,6 +4,13 @@ services:
     # Attach app service to the shared infrastructure network.
     networks:
       - central-net
+    # Default resource limits for apps (override in compose.base.yml if needed)
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
     # SSOT Traefik labels for app subdomain routing and TLS.
     labels:
       # Enable Traefik for this service.
@@ -21,3 +28,8 @@ services:
 
 # Networks must be defined in the consumer compose file, not here.
 # extends does not inherit top-level networks section.
+# Resource limits can be overridden in compose.base.yml:
+#   deploy:
+#     resources:
+#       limits:
+#         memory: 1G
