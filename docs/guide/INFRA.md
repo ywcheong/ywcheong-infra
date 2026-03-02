@@ -170,7 +170,7 @@ otherapp             stopped    -
 │   │       └── datasources/  # 데이터소스 자동 구성
 │   ├── maintenance/
 │   │   └── index.html        # 점검 페이지
-│   └── fragments/
+│   └── commons/
 │       └── app-attach-base.yml # 앱 인프라 연결 SSOT
 │
 └── apps/

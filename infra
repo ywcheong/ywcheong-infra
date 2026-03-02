@@ -214,7 +214,7 @@ ensure_infra_structure() {
   mkdir -p "$APPS_DIR"
   mkdir -p "$CENTRAL_INFRA_DIR"
   mkdir -p "$CENTRAL_INFRA_DIR/traefik/dynamic"
-  mkdir -p "$CENTRAL_INFRA_DIR/fragments"
+  mkdir -p "$CENTRAL_INFRA_DIR/commons"
   mkdir -p "$CENTRAL_INFRA_DIR/certs"
   mkdir -p "$CENTRAL_INFRA_DIR/maintenance"
   mkdir -p "$CENTRAL_INFRA_DIR/prometheus"

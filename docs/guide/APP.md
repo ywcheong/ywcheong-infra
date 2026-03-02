@@ -90,7 +90,7 @@ https://myapp.app.example.com
    services:
      app-server:
        extends:
-         file: ../central-infra/fragments/app-attach-base.yml
+         file: ../central-infra/commons/app-attach-base.yml
          service: app-server
    ```
 
