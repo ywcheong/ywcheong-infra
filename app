@@ -164,6 +164,71 @@ read_env_value() {
   return 1
 }
 
+# Required environment variables for root .env
+REQUIRED_ROOT_ENV_VARS=(
+  "BASE_DOMAIN"
+)
+
+# Required environment variables for app .env
+REQUIRED_APP_ENV_VARS=(
+  "APP_NAME"
+  "APP_PORT"
+)
+
+# Validate root environment file has required variables
+validate_root_env() {
+  local env_file="$INFRA_ROOT/.env"
+  local missing_vars=()
+  local var_name var_value
+
+  if [[ ! -f "$env_file" ]]; then
+    error "Root environment file not found: $env_file"
+    error "Run './infra setup' first"
+    exit 1
+  fi
+
+  for var_name in "${REQUIRED_ROOT_ENV_VARS[@]}"; do
+    if ! var_value=$(read_env_value "$env_file" "$var_name") || [[ -z "$var_value" ]]; then
+      missing_vars+=("$var_name")
+    fi
+  done
+
+  if [[ ${#missing_vars[@]} -gt 0 ]]; then
+    error "Missing required environment variables in root .env:"
+    for var_name in "${missing_vars[@]}"; do
+      printf "  - %s\n" "$var_name" >&2
+    done
+    exit 1
+  fi
+}
+
+# Validate app environment file has required variables
+validate_app_env() {
+  local app_dir="$1"
+  local env_file="$app_dir/.env"
+  local missing_vars=()
+  local var_name var_value
+
+  if [[ ! -f "$env_file" ]]; then
+    error "App environment file not found: $env_file"
+    exit 1
+  fi
+
+  for var_name in "${REQUIRED_APP_ENV_VARS[@]}"; do
+    if ! var_value=$(read_env_value "$env_file" "$var_name") || [[ -z "$var_value" ]]; then
+      missing_vars+=("$var_name")
+    fi
+  done
+
+  if [[ ${#missing_vars[@]} -gt 0 ]]; then
+    error "Missing required environment variables in $env_file:"
+    for var_name in "${missing_vars[@]}"; do
+      printf "  - %s\n" "$var_name" >&2
+    done
+    exit 1
+  fi
+}
+
 compose_app() {
   local app_name="$1"
   shift
@@ -276,6 +341,8 @@ start_app() {
 
   require_apps_dir
   ensure_app_exists "$app_name"
+  validate_root_env
+  validate_app_env "$app_dir"
 
   if ! app_port="$(read_env_value "$app_dir/.env" "APP_PORT")"; then
     error "APP_PORT is missing in $app_dir/.env"
@@ -307,6 +374,8 @@ upgrade_app() {
 
   require_apps_dir
   ensure_app_exists "$app_name"
+  validate_root_env
+  validate_app_env "$app_dir"
 
   info "Enabling maintenance routing for '$app_name'"
   generate_maintenance_yaml "$app_name" > "$maintenance_file"
@@ -318,7 +387,7 @@ upgrade_app() {
   compose_app "$app_name" pull
 
   info "Recreating app container"
-  compose_app "$app_name" up -d --no-deps "${app_name}-app-server-1"
+  compose_app "$app_name" up -d --no-deps "app-server"
 
   success "Upgrade complete for '$app_name'. Maintenance routing will be removed on exit."
 }
