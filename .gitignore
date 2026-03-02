@@ -1,0 +1,23 @@
+# Environment files (contains sensitive data)
+.env
+
+# SSL/TLS certificates (manual placement)
+central-infra/certs/*.pem
+central-infra/certs/*.key
+central-infra/certs/*.crt
+
+# Docker volumes backup
+*.tar.gz
+
+# macOS
+.DS_Store
+
+# Editor
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Logs
+*.log
