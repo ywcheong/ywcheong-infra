@@ -1,0 +1,5 @@
+services:
+  app-server:
+    extends:
+      file: ../central-infra/fragments/app-attach-base.yml
+      service: app-server
