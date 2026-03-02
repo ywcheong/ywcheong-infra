@@ -30,7 +30,7 @@ tls:
 
 api:
   dashboard: true
-  insecure: true
+  insecure: false
 
 accessLog: {}
 

@@ -9,6 +9,9 @@
 # Docker volumes backup
 *.tar.gz
 
+# Auto-generated auth middleware
+dashboard-auth.yml
+
 # macOS
 .DS_Store
 
