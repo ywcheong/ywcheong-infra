@@ -38,13 +38,54 @@ usage() {
   cat <<EOF
 Usage: ./infra <command>
 
+Central infrastructure management CLI for single-server setup.
+
 Commands:
   setup    Idempotent environment setup
+           - Checks prerequisites (Docker installed, daemon running)
+           - Verifies ports 80/443 are available
+           - Creates directory structure (apps/, central-infra/, etc.)
+           - Generates .env template if not exists
+           - Creates central-net Docker network (external)
+           
   start    Start central infra, then all apps
+           - Starts central-infra/compose.yml first
+           - Discovers all valid apps in apps/ directory
+           - Starts each app in alphabetical order
+           - Traefik auto-detects and enables routing
+           
   stop     Stop apps in reverse order, then central infra
+           - Stops all apps in reverse alphabetical order
+           - Stops central infrastructure last
+           - Preserves all volume data (MySQL, Grafana, etc.)
+           - Does not delete networks or files
+           
   status   Show grouped running container status
+           - Displays central infrastructure containers
+           - Shows each app's containers separately
+           - Includes container names, status, and ports
+           
   archive  Create migration archive after confirmation
+           - Prompts for confirmation
+           - Stops all services (./infra stop)
+           - Creates tarball of ~/infra and /var/lib/docker/volumes/
+           - Output: infra-backup-YYYYMMDD-HHMMSS.tar.gz
+           - Includes Origin Certificates, configs, and all data
+           
   help     Show this help message
+
+Examples:
+  ./infra setup                # First-time setup
+  ./infra start                # Start everything
+  ./infra status               # Check status
+  ./infra stop                 # Stop everything
+  ./infra archive              # Create backup for migration
+
+Notes:
+  - All operations are idempotent where applicable
+  - Volume data is never deleted by stop/archive commands
+  - Must run 'setup' before first 'start'
+  - Requires Docker and docker compose installed
 EOF
 }
 

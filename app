@@ -39,14 +39,56 @@ error() {
 
 usage() {
   cat <<EOF
-Usage:
-  ./app add <name> <port>
-  ./app remove <name>
-  ./app start <name>
-  ./app stop <name>
-  ./app upgrade <name>
+Usage: ./app <command> [arguments]
+
+App lifecycle management CLI for single-server infrastructure.
+
+Commands:
+  create <name> <port>  Create new app scaffolding
+                        - Validates name (lowercase letters, hyphens only)
+                        - Checks for port validity (1-65535)
+                        - Creates apps/<name>/ directory structure
+                        - Generates .env, compose.base.yml, compose.attach.yml
+                        
+  remove <name>         Remove an existing app
+                        - Prompts for confirmation
+                        - Stops containers via docker compose down
+                        - Deletes app directory
+                        - Central infra and other apps unaffected
+                        
+  start <name>          Start an app container
+                        - Reads APP_PORT from apps/<name>/.env
+                        - Starts via docker compose up -d
+                        - Traefik auto-detects and enables routing
+                        
+  stop <name>           Stop an app container
+                        - Stops via docker compose down
+                        - Traefik auto-disables routing
+                        - Does not remove app files
+                        
+  upgrade <name>        Perform zero-downtime upgrade
+                        1. Enables maintenance page routing
+                        2. Pulls latest image
+                        3. Recreates container (no dependencies)
+                        4. Restores normal routing (auto-cleanup on error)
+                        
+  list                  List all registered apps and their status
+                        - Shows app name and container status
+                        - Reads from apps/ directory
+                        
+  help                  Show this help message
+
+Examples:
+  ./app create myapp 8080
+  ./app start myapp
+  ./app upgrade myapp
+  ./app remove myapp
   ./app list
-  ./app help
+
+Notes:
+  - All compose commands use both ~/infra/.env and apps/<name>/.env
+  - Domain routing uses {name}.app.\${BASE_DOMAIN}
+  - App files never hardcode domain information
 EOF
 }
 
@@ -160,7 +202,7 @@ http:
 EOF
 }
 
-add_app() {
+create_app() {
   local app_name="$1"
   local app_port="$2"
   local app_dir="$APPS_DIR/$app_name"
@@ -316,9 +358,9 @@ main() {
   local command="${1:-help}"
 
   case "$command" in
-    add)
+    create)
       [ "$#" -eq 3 ] || { usage; exit 1; }
-      add_app "$2" "$3"
+      create_app "$2" "$3"
       ;;
     remove)
       [ "$#" -eq 2 ] || { usage; exit 1; }

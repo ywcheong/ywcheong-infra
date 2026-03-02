@@ -267,20 +267,20 @@ CNAME   *.app      example.com          Proxied (🟠)
 ### 7-2. `./app` — 앱 관리
 
 ```bash
-./app add <name> <port>   # scaffold
-                          # 이름 유효성 검사 (영소문자·하이픈), 중복 체크
-                          # apps/<name>/.env 생성 (APP_NAME, APP_PORT)
-                          # compose.attach.yml 생성 (fragment extends + 변수 참조)
-                          # compose.base.yml 템플릿 생성 + 다음 단계 안내
+./app create <name> <port> # scaffold
+                           # 이름 유효성 검사 (영소문자·하이픈), 중복 체크
+                           # apps/<name>/.env 생성 (APP_NAME, APP_PORT)
+                           # compose.attach.yml 생성 (fragment extends + 변수 참조)
+                           # compose.base.yml 템플릿 생성 + 다음 단계 안내
 
-./app remove <name>       # 확인 프롬프트 → docker compose down → 파일 정리
-./app start <name>        # 해당 앱 기동 (포트는 .env에서 읽음, 인자 불필요)
-./app stop <name>         # 해당 앱 종료
-./app upgrade <name>      # 점검 전환 → 업그레이드 → 라우팅 복구 (아래 상세)
-./app list                # 등록된 앱 목록 및 컨테이너 상태
+./app remove <name>        # 확인 프롬프트 → docker compose down → 파일 정리
+./app start <name>         # 해당 앱 기동 (포트는 .env에서 읽음, 인자 불필요)
+./app stop <name>          # 해당 앱 종료
+./app upgrade <name>       # 점검 전환 → 업그레이드 → 라우팅 복구 (아래 상세)
+./app list                 # 등록된 앱 목록 및 컨테이너 상태
 ```
 
-**`./app start`에 포트 번호가 불필요한 이유**: 포트는 `./app add` 실행 시 `apps/<name>/.env`에 `APP_PORT`로 기록된다. 이후 모든 명령은 이 파일을 읽으므로 포트를 다시 인자로 받을 필요가 없다.
+**`./app start`에 포트 번호가 불필요한 이유**: 포트는 `./app create` 실행 시 `apps/<name>/.env`에 `APP_PORT`로 기록된다. 이후 모든 명령은 이 파일을 읽으므로 포트를 다시 인자로 받을 필요가 없다.
 
 ### 7-3. `./app upgrade` 상세 동작
 
@@ -309,7 +309,7 @@ upgrade() {
 
 ### 7-4. CLI 설계 불변 원칙
 
-- `./app add/remove`는 `central-infra/compose.yml`을 **절대 수정하지 않음**
+- `./app create/remove`는 `central-infra/compose.yml`을 **절대 수정하지 않음**
 - `./infra stop/archive`는 볼륨 데이터를 **절대 삭제하지 않음**
 - 파괴적 작업(`remove`, `archive`)은 **명시적 확인 프롬프트** 필수
 - 모든 스크립트는 `set -e`로 오류 발생 시 즉시 중단
@@ -322,7 +322,7 @@ upgrade() {
 ### 앱 추가
 
 ```
-1. ./app add myapp 8080
+1. ./app create myapp 8080
      → apps/myapp/.env 생성: APP_NAME=myapp, APP_PORT=8080
      → compose.attach.yml 생성 (변수 참조, 도메인 하드코딩 없음)
      → compose.base.yml 템플릿 생성

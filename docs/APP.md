@@ -18,11 +18,11 @@
 
 ## 빠른 시작
 
-### 새 앱 추가
+### 새 앱의 템플릿 추가
 
 ```bash
 # 앱 추가 (이름: myapp, 포트: 8080)
-./app add myapp 8080
+./app create myapp 8080
 
 # 생성된 파일 확인
 ls -la apps/myapp/
@@ -62,14 +62,14 @@ https://myapp.app.example.com
 
 ---
 
-## 앱 추가하기
+## 앱 템플릿 추가하기
 
-### `./app add <name> <port>`
+### `./app create <name> <port>`
 
 새로운 앱을 스캐폴딩합니다.
 
 ```bash
-./app add myapp 8080
+./app create myapp 8080
 ```
 
 **검증 규칙**:
@@ -467,7 +467,7 @@ docker logs app-myapp-server
 
 | 명령어 | 설명 |
 |--------|------|
-| `./app add <name> <port>` | 새 앱 추가 |
+| `./app create <name> <port>` | 새 앱 템플릿을 이름으로 추가 |
 | `./app remove <name>` | 앱 제거 (확인 필요) |
 | `./app start <name>` | 앱 시작 |
 | `./app stop <name>` | 앱 중지 |
