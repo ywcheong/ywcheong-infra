@@ -188,7 +188,7 @@ otherapp             stopped    -
 
 ### Traefik (리버스 프록시)
 
-- **이미지**: traefik:v3.0
+- **이미지**: traefik:latest
 - **포트**: 80 (HTTP), 443 (HTTPS)
 - **기능**:
   - Docker 컨테이너 자동 감지 (라벨 기반)
