@@ -1,0 +1,25 @@
+services:
+  # Base app attachment fragment for Compose `extends` consumers.
+  app-server:
+    # Attach app service to the shared infrastructure network.
+    networks:
+      - central-net
+    # SSOT Traefik labels for app subdomain routing and TLS.
+    labels:
+      # Enable Traefik for this service.
+      - "traefik.enable=true"
+      # HTTPS router for <app>.app.<base-domain>.
+      - "traefik.http.routers.${APP_NAME}.rule=Host(`${APP_NAME}.app.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.${APP_NAME}.entrypoints=websecure"
+      - "traefik.http.routers.${APP_NAME}.tls=true"
+      # Target internal application port.
+      - "traefik.http.services.${APP_NAME}.loadbalancer.server.port=${APP_PORT}"
+      # HTTP router for redirecting plain HTTP to HTTPS.
+      - "traefik.http.routers.${APP_NAME}-http.rule=Host(`${APP_NAME}.app.${BASE_DOMAIN}`)"
+      - "traefik.http.routers.${APP_NAME}-http.entrypoints=web"
+      - "traefik.http.routers.${APP_NAME}-http.middlewares=redirect-to-https"
+
+# Shared external network exposed by central infrastructure.
+networks:
+  central-net:
+    external: true
